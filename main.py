@@ -1,11 +1,19 @@
 import pygame
 import os
 import random
+import enum
 from qlearning import QLearningAgent
 pygame.init()
 
 # Global Constants
-HUMAN_MODE = False
+class Mode(enum.Enum):
+    HUMAN_MODE = 1
+    COMPUTER_TRAIN = 2
+    COMPUTER_PLAY = 3
+
+MODE = Mode.HUMAN_MODE
+EPISODE = 0
+
 SCREEN_HEIGHT = 600
 SCREEN_WIDTH = 1100
 SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -53,7 +61,7 @@ class Dinosaur:
         self.dino_rect.x = self.X_POS
         self.dino_rect.y = self.Y_POS
 
-    # update function for hum play
+    # update function for human play
     def update(self, userInput):
         if self.dino_duck:
             self.duck()
@@ -237,7 +245,7 @@ def main(qAgent):
         userInput = pygame.key.get_pressed()
 
         player.draw(SCREEN)
-        if HUMAN_MODE:
+        if MODE == Mode.HUMAN_MODE:
             player.update(userInput) # here we should send K_up or K_down depending on Q-states
         else:
             closest_obstacle = None
@@ -258,7 +266,7 @@ def main(qAgent):
             obstacle.draw(SCREEN)
             obstacle.update()
             if player.dino_rect.colliderect(obstacle.rect):
-                pygame.time.delay(2000)
+                pygame.time.delay(1000)
                 death_count += 1
                 menu(death_count)
 
@@ -277,6 +285,7 @@ def menu(death_count):
     qAgent = QLearningAgent(0, 0, 0, 0)
 
     global points
+    global EPISODE
     run = True
     while run:
         SCREEN.fill((255, 255, 255))
@@ -295,12 +304,19 @@ def menu(death_count):
         SCREEN.blit(text, textRect)
         SCREEN.blit(RUNNING[0], (SCREEN_WIDTH // 2 - 20, SCREEN_HEIGHT // 2 - 140))
         pygame.display.update()
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                run = False
-            if event.type == pygame.KEYDOWN:
-                main(qAgent)
+        if MODE == Mode.HUMAN_MODE:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    run = False
+                if event.type == pygame.KEYDOWN: # increase this later!!
+                    main(qAgent)
+        elif MODE == Mode.COMPUTER_TRAIN and EPISODE < 3:
+            EPISODE += 1
+            main(qAgent)
+        else:
+            pygame.quit()
+            run = False
 
-
+MODE = Mode.COMPUTER_TRAIN
 menu(death_count=0)

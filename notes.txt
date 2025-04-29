@@ -1,0 +1,4 @@
+state: (dino_y_pos, cactus_x_pos, gameSpeed)
+
+classes to write:
+- agentState

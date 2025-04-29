@@ -1,9 +1,11 @@
 import pygame
 import os
 import random
+from qlearning import QLearningAgent
 pygame.init()
 
 # Global Constants
+HUMAN_MODE = False
 SCREEN_HEIGHT = 600
 SCREEN_WIDTH = 1100
 SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -51,6 +53,7 @@ class Dinosaur:
         self.dino_rect.x = self.X_POS
         self.dino_rect.y = self.Y_POS
 
+    # update function for hum play
     def update(self, userInput):
         if self.dino_duck:
             self.duck()
@@ -71,6 +74,31 @@ class Dinosaur:
             self.dino_run = False
             self.dino_jump = False
         elif not (self.dino_jump or userInput[pygame.K_DOWN]):
+            self.dino_duck = False
+            self.dino_run = True
+            self.dino_jump = False
+        
+    # update funciton for q-learning
+    def q_update(self, userInput):
+        if self.dino_duck:
+            self.duck()
+        if self.dino_run:
+            self.run()
+        if self.dino_jump:
+            self.jump()
+
+        if self.step_index >= 10:
+            self.step_index = 0
+
+        if userInput == "jump" and not self.dino_jump:
+            self.dino_duck = False
+            self.dino_run = False
+            self.dino_jump = True
+        elif userInput == "duck" and not self.dino_jump:
+            self.dino_duck = True
+            self.dino_run = False
+            self.dino_jump = False
+        elif not (self.dino_jump or userInput == "duck"):
             self.dino_duck = False
             self.dino_run = True
             self.dino_jump = False
@@ -100,6 +128,9 @@ class Dinosaur:
 
     def draw(self, SCREEN):
         SCREEN.blit(self.image, (self.dino_rect.x, self.dino_rect.y))
+
+    def getHeight(self):
+        return self.dino_rect.y
 
 
 class Cloud:
@@ -141,7 +172,6 @@ class SmallCactus(Obstacle):
         super().__init__(image, self.type)
         self.rect.y = 325
 
-
 class LargeCactus(Obstacle):
     def __init__(self, image):
         self.type = random.randint(0, 2)
@@ -163,7 +193,7 @@ class Bird(Obstacle):
         self.index += 1
 
 
-def main():
+def main(qAgent):
     global game_speed, x_pos_bg, y_pos_bg, points, obstacles
     run = True
     clock = pygame.time.Clock()
@@ -207,15 +237,22 @@ def main():
         userInput = pygame.key.get_pressed()
 
         player.draw(SCREEN)
-        player.update(userInput)
+        if HUMAN_MODE:
+            player.update(userInput) # here we should send K_up or K_down depending on Q-states
+        else:
+            closest_obstacle = None
+            if len(obstacles) > 0:
+                closest_obstacle = obstacles[0].rect.x-80
+            player.q_update(qAgent.computeActionFromQValues((closest_obstacle, game_speed, player.getHeight())))
+
 
         if len(obstacles) == 0:
             if random.randint(0, 2) == 0:
                 obstacles.append(SmallCactus(SMALL_CACTUS))
             elif random.randint(0, 2) == 1:
                 obstacles.append(LargeCactus(LARGE_CACTUS))
-            elif random.randint(0, 2) == 2:
-                obstacles.append(Bird(BIRD))
+            # elif random.randint(0, 2) == 2:
+            #     obstacles.append(Bird(BIRD))
 
         for obstacle in obstacles:
             obstacle.draw(SCREEN)
@@ -237,6 +274,8 @@ def main():
 
 
 def menu(death_count):
+    qAgent = QLearningAgent(0, 0, 0, 0)
+
     global points
     run = True
     while run:
@@ -261,7 +300,7 @@ def menu(death_count):
                 pygame.quit()
                 run = False
             if event.type == pygame.KEYDOWN:
-                main()
+                main(qAgent)
 
 
 menu(death_count=0)

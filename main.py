@@ -241,7 +241,11 @@ def main(qAgent):
             if event.type == pygame.QUIT:
                 run = False
 
-        SCREEN.fill((255, 255, 255))
+        # aesthetics
+        if MODE == Mode.COMPUTER_TRAIN:
+            SCREEN.fill((255, 16, 240))
+        else:
+            SCREEN.fill((255, 255, 255))
         userInput = pygame.key.get_pressed()
 
         player.draw(SCREEN)
@@ -251,7 +255,10 @@ def main(qAgent):
             closest_obstacle = None
             if len(obstacles) > 0:
                 closest_obstacle = obstacles[0].rect.x-80
-            player.q_update(qAgent.computeActionFromQValues((closest_obstacle, game_speed, player.getHeight())))
+            if MODE == Mode.COMPUTER_PLAY:
+                player.q_update(qAgent.computeActionFromQValues((closest_obstacle, game_speed, player.getHeight())))
+            else:
+                player.q_update(qAgent.getAction((closest_obstacle, game_speed, player.getHeight()))) # Test this!!
 
 
         if len(obstacles) == 0:

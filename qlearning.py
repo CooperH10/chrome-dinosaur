@@ -329,6 +329,7 @@ class QLearningAgent():
           HINT: You might want to use util.flipCoin(prob)
           HINT: To pick randomly from a list, use random.choice(list)
         """
+        return "duck"
         # Pick Action
         legalActions = self.actions
         action = None

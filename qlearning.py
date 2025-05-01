@@ -257,15 +257,17 @@ class QLearningAgent():
         - self.getLegalActions(state)
           which returns legal actions for a state
     """
-    def __init__(self, alpha, epsilon, gamma, numTraining):
+    def __init__(self, epsilon=0.2, gamma=0.8, alpha=0.2):
         "You can initialize Q-values here..."
         self.alpha = float(alpha)
         self.epsilon = float(epsilon)
         self.discount = float(gamma)
-        self.numTraining = int(numTraining)
 
         self.qvalues = Counter()
-        self.actions = ("jump")
+        self.actions = ("jump", "duck")
+
+        self.lastAction = None
+        self.lastState = None
 
     def getQValue(self, state, action):
         """
@@ -300,7 +302,6 @@ class QLearningAgent():
           are no legal actions, which is the case at the terminal state,
           you should return None.
         """
-        return "jump"
         actions = self.actions
         if not actions: # Terminal state edge case
             return None
@@ -329,7 +330,6 @@ class QLearningAgent():
           HINT: You might want to use util.flipCoin(prob)
           HINT: To pick randomly from a list, use random.choice(list)
         """
-        return "duck"
         # Pick Action
         legalActions = self.actions
         action = None
@@ -347,9 +347,6 @@ class QLearningAgent():
           The parent class calls this to observe a
           state = action => nextState and reward transition.
           You should do your Q-Value update here
-
-          NOTE: You should never call this function,
-          it will be called on your behalf
         """
         # Implementing the qvalue algorithm
         old_qvalue = self.getQValue(state, action)
@@ -357,6 +354,7 @@ class QLearningAgent():
 
         # Update qvalue with "weighted average" using alpha
         self.qvalues[(state, action)] = (1-self.alpha)*old_qvalue + self.alpha*utility
+        print(self.qvalues)
 
     def getPolicy(self, state):
         return self.computeActionFromQValues(state)

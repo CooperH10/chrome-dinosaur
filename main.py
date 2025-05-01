@@ -38,6 +38,7 @@ CLOUD = pygame.image.load(os.path.join("Assets/Other", "Cloud.png"))
 
 BG = pygame.image.load(os.path.join("Assets/Other", "Track.png"))
 
+qAgent = QLearningAgent(.2, .8, .2)
 
 class Dinosaur:
     X_POS = 80
@@ -201,7 +202,7 @@ class Bird(Obstacle):
         self.index += 1
 
 
-def main(qAgent):
+def main():
     global game_speed, x_pos_bg, y_pos_bg, points, obstacles
     run = True
     clock = pygame.time.Clock()
@@ -220,8 +221,18 @@ def main(qAgent):
         points += 1
         if points % 100 == 0:
             game_speed += 1
+        
+        if MODE == Mode.COMPUTER_TRAIN:
+            time_to_obstacle = float("inf")
+            if len(obstacles) > 0:
+                time_to_obstacle = int((obstacles[0].rect.x-80) / game_speed)
+            qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, 1)
 
         text = font.render("Points: " + str(points), True, (0, 0, 0))
+
+        if MODE == Mode.COMPUTER_TRAIN:
+            text = font.render("Points: " + str(points) + "  Ep: " + str(EPISODE), True, (0, 0, 0))
+
         textRect = text.get_rect()
         textRect.center = (1000, 40)
         SCREEN.blit(text, textRect)
@@ -252,13 +263,18 @@ def main(qAgent):
         if MODE == Mode.HUMAN_MODE:
             player.update(userInput) # here we should send K_up or K_down depending on Q-states
         else:
-            closest_obstacle = None
+            time_to_obstacle = float("inf")
             if len(obstacles) > 0:
-                closest_obstacle = obstacles[0].rect.x-80
+                time_to_obstacle = int((obstacles[0].rect.x-80) / game_speed)
+                #print("time to obstacle", time_to_obstacle)
             if MODE == Mode.COMPUTER_PLAY:
-                player.q_update(qAgent.computeActionFromQValues((closest_obstacle, game_speed, player.getHeight())))
+                qAgent.lastAction = qAgent.computeActionFromQValues(time_to_obstacle)
+                qAgent.lastState = time_to_obstacle
+                player.q_update(qAgent.lastAction)
             else:
-                player.q_update(qAgent.getAction((closest_obstacle, game_speed, player.getHeight()))) # Test this!!
+                qAgent.lastAction = qAgent.getAction(time_to_obstacle)
+                qAgent.lastState = time_to_obstacle
+                player.q_update(qAgent.lastAction)
 
 
         if len(obstacles) == 0:
@@ -275,6 +291,7 @@ def main(qAgent):
             if player.dino_rect.colliderect(obstacle.rect):
                 pygame.time.delay(1000)
                 death_count += 1
+                qAgent.update(qAgent.lastState, qAgent.lastAction, None, -300)
                 menu(death_count)
 
         background()
@@ -284,12 +301,11 @@ def main(qAgent):
 
         score()
 
-        clock.tick(30)
+        clock.tick(10000)
         pygame.display.update()
 
 
 def menu(death_count):
-    qAgent = QLearningAgent(0, 0, 0, 0)
 
     global points
     global EPISODE
@@ -311,16 +327,16 @@ def menu(death_count):
         SCREEN.blit(text, textRect)
         SCREEN.blit(RUNNING[0], (SCREEN_WIDTH // 2 - 20, SCREEN_HEIGHT // 2 - 140))
         pygame.display.update()
-        if MODE == Mode.HUMAN_MODE:
+        if MODE == Mode.HUMAN_MODE or MODE == Mode.COMPUTER_PLAY:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     run = False
                 if event.type == pygame.KEYDOWN: # increase this later!!
-                    main(qAgent)
-        elif MODE == Mode.COMPUTER_TRAIN and EPISODE < 3:
+                    main()
+        elif MODE == Mode.COMPUTER_TRAIN and EPISODE < 20:
             EPISODE += 1
-            main(qAgent)
+            main()
         else:
             pygame.quit()
             run = False

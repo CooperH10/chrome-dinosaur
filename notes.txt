@@ -2,3 +2,12 @@ state: (dino_y_pos, cactus_x_pos, gameSpeed)
 
 classes to write:
 - agentState
+
+
+
+
+what we did
+- first we simplified the game a little, got rid of birds
+- gave the computer control of the game and created a training mode where the game restarted for a given number of episodes
+- discussed how to measure state space --> time to obstacle instead of obstacle position?? yes (jumping height/time is standard regardless of speed)
+- wrote the update function to calculate q-values at every point of the training process

@@ -38,7 +38,7 @@ CLOUD = pygame.image.load(os.path.join("Assets/Other", "Cloud.png"))
 
 BG = pygame.image.load(os.path.join("Assets/Other", "Track.png"))
 
-qAgent = QLearningAgent(.2, .8, .2)
+qAgent = QLearningAgent(1, .8, .2)
 
 class Dinosaur:
     X_POS = 80
@@ -226,7 +226,11 @@ def main():
             time_to_obstacle = float("inf")
             if len(obstacles) > 0:
                 time_to_obstacle = int((obstacles[0].rect.x-80) / game_speed)
-            qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, 1)
+            # Punish airtime
+            if player.dino_rect.y <= 310:
+                qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, -5)
+            else:
+                qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, 1)
 
         text = font.render("Points: " + str(points), True, (0, 0, 0))
 
@@ -267,14 +271,22 @@ def main():
             if len(obstacles) > 0:
                 time_to_obstacle = int((obstacles[0].rect.x-80) / game_speed)
                 #print("time to obstacle", time_to_obstacle)
-            if MODE == Mode.COMPUTER_PLAY:
-                qAgent.lastAction = qAgent.computeActionFromQValues(time_to_obstacle)
-                qAgent.lastState = time_to_obstacle
-                player.q_update(qAgent.lastAction)
+            # Only select an action if on the ground (y-axis is flipped)
+            # if time_to_obstacle == 15:
+            #     player.q_update("jump")
+            if player.dino_rect.y >= 310:
+                # if qAgent.lastState == "jump":
+
+                if MODE == Mode.COMPUTER_PLAY:
+                    qAgent.lastAction = qAgent.computeActionFromQValues(time_to_obstacle)
+                    qAgent.lastState = time_to_obstacle
+                    player.q_update(qAgent.lastAction)
+                else:
+                    qAgent.lastAction = qAgent.getAction(time_to_obstacle)
+                    qAgent.lastState = time_to_obstacle
+                    player.q_update(qAgent.lastAction)
             else:
-                qAgent.lastAction = qAgent.getAction(time_to_obstacle)
-                qAgent.lastState = time_to_obstacle
-                player.q_update(qAgent.lastAction)
+                player.q_update(None)
 
 
         if len(obstacles) == 0:
@@ -289,20 +301,23 @@ def main():
             obstacle.draw(SCREEN)
             obstacle.update()
             if player.dino_rect.colliderect(obstacle.rect):
-                pygame.time.delay(1000)
+                if not MODE == Mode.COMPUTER_TRAIN:
+                    pygame.time.delay(1000)
                 death_count += 1
                 qAgent.update(qAgent.lastState, qAgent.lastAction, None, -300)
-                menu(death_count)
+                run = False
+                #menu(death_count)
 
-        background()
+        if run:
+            background()
 
-        cloud.draw(SCREEN)
-        cloud.update()
+            cloud.draw(SCREEN)
+            cloud.update()
 
-        score()
+            score()
 
-        clock.tick(10000)
-        pygame.display.update()
+            clock.tick(30000)
+            pygame.display.update()
 
 
 def menu(death_count):
@@ -334,7 +349,7 @@ def menu(death_count):
                     run = False
                 if event.type == pygame.KEYDOWN: # increase this later!!
                     main()
-        elif MODE == Mode.COMPUTER_TRAIN and EPISODE < 20:
+        elif MODE == Mode.COMPUTER_TRAIN and EPISODE < 4:
             EPISODE += 1
             main()
         else:

@@ -225,10 +225,12 @@ def main():
         
         if MODE == Mode.COMPUTER_TRAIN:
             time_to_obstacle = float("inf")
-            if time_to_obstacle < 0 and player.dino_rect.y >= 310:
-                qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, 100)
             if len(obstacles) > 0:
                 time_to_obstacle = int((obstacles[0].rect.x-80) / game_speed)
+
+            if time_to_obstacle < 0 and player.dino_rect.y >= 310:
+                qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, 100)
+
             # Punish airtime
             if player.dino_rect.y < 310:
                 qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, -5)

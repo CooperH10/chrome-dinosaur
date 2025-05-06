@@ -11,3 +11,6 @@ what we did
 - gave the computer control of the game and created a training mode where the game restarted for a given number of episodes
 - discussed how to measure state space --> time to obstacle instead of obstacle position?? yes (jumping height/time is standard regardless of speed)
 - wrote the update function to calculate q-values at every point of the training process
+- figured out that measuring time to obstacle is a good idea! 15 is the right number --> now we just need our program to figure that out
+- started printing out q-values... looks promising but not great THEN we had a recursion depth stack overflow catastrophie which cooper fixed
+- we started running our program for thousands of iterations and the q values started looking much better

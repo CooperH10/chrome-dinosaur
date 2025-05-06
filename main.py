@@ -2,6 +2,7 @@ import pygame
 import os
 import random
 import enum
+import pickle
 from qlearning import QLearningAgent
 pygame.init()
 
@@ -38,7 +39,7 @@ CLOUD = pygame.image.load(os.path.join("Assets/Other", "Cloud.png"))
 
 BG = pygame.image.load(os.path.join("Assets/Other", "Track.png"))
 
-qAgent = QLearningAgent(1, .8, .2)
+qAgent = QLearningAgent(.45, .95, .2)
 
 class Dinosaur:
     X_POS = 80
@@ -208,7 +209,7 @@ def main():
     clock = pygame.time.Clock()
     player = Dinosaur()
     cloud = Cloud()
-    game_speed = 20
+    game_speed = 20 ###
     x_pos_bg = 0
     y_pos_bg = 380
     points = 0
@@ -224,13 +225,15 @@ def main():
         
         if MODE == Mode.COMPUTER_TRAIN:
             time_to_obstacle = float("inf")
+            if time_to_obstacle < 0 and player.dino_rect.y >= 310:
+                qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, 100)
             if len(obstacles) > 0:
                 time_to_obstacle = int((obstacles[0].rect.x-80) / game_speed)
             # Punish airtime
-            if player.dino_rect.y <= 310:
+            if player.dino_rect.y < 310:
                 qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, -5)
             else:
-                qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, 1)
+                qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, 10)
 
         text = font.render("Points: " + str(points), True, (0, 0, 0))
 
@@ -278,9 +281,7 @@ def main():
                 # if qAgent.lastState == "jump":
 
                 if MODE == Mode.COMPUTER_PLAY:
-                    qAgent.lastAction = qAgent.computeActionFromQValues(time_to_obstacle)
-                    qAgent.lastState = time_to_obstacle
-                    player.q_update(qAgent.lastAction)
+                    player.q_update(qAgent.getPolicy(time_to_obstacle))
                 else:
                     qAgent.lastAction = qAgent.getAction(time_to_obstacle)
                     qAgent.lastState = time_to_obstacle
@@ -303,8 +304,11 @@ def main():
             if player.dino_rect.colliderect(obstacle.rect):
                 if not MODE == Mode.COMPUTER_TRAIN:
                     pygame.time.delay(1000)
+                else:
+                    with open('states.pkl', 'wb') as file:
+                        pickle.dump(qAgent.qvalues, file)
+                    qAgent.update(qAgent.lastState, qAgent.lastAction, None, -300)
                 death_count += 1
-                qAgent.update(qAgent.lastState, qAgent.lastAction, None, -300)
                 run = False
                 #menu(death_count)
 
@@ -316,7 +320,11 @@ def main():
 
             score()
 
-            clock.tick(30000)
+            if MODE == Mode.COMPUTER_TRAIN:
+                clock.tick(30000)
+            else:
+                clock.tick(30)
+            
             pygame.display.update()
 
 
@@ -349,12 +357,15 @@ def menu(death_count):
                     run = False
                 if event.type == pygame.KEYDOWN: # increase this later!!
                     main()
-        elif MODE == Mode.COMPUTER_TRAIN and EPISODE < 4:
+        elif MODE == Mode.COMPUTER_TRAIN and EPISODE < 2000:
             EPISODE += 1
             main()
         else:
             pygame.quit()
             run = False
 
-MODE = Mode.COMPUTER_TRAIN
+MODE = Mode.COMPUTER_PLAY
+if MODE == Mode.COMPUTER_PLAY:
+    qAgent.loadStates("states.pkl")
+
 menu(death_count=0)

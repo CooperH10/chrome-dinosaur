@@ -5,6 +5,7 @@ import heapq
 import random
 import io
 import functools
+import pickle
 
 def sign(x):
     """
@@ -269,6 +270,12 @@ class QLearningAgent():
         self.lastAction = None
         self.lastState = None
 
+    def loadStates(self, filename):
+        """" Sets Q-states to values from pickle file. """
+        with open(filename, 'rb') as file:
+            self.qvalues = pickle.load(file)
+        print(self.qvalues)
+
     def getQValue(self, state, action):
         """
           Returns Q(state,action)
@@ -354,7 +361,13 @@ class QLearningAgent():
 
         # Update qvalue with "weighted average" using alpha
         self.qvalues[(state, action)] = (1-self.alpha)*old_qvalue + self.alpha*utility
-        print(self.qvalues)
+        print("\n")
+
+        # print(self.qvalues.values())
+        # print(self.qvalues.keys())
+
+        for key, value in sorted(self.qvalues.items(), key=lambda x: x[0]): 
+            print("{} : {}".format(key, value))
 
     def getPolicy(self, state):
         return self.computeActionFromQValues(state)

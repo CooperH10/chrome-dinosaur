@@ -270,7 +270,7 @@ def main():
                         reward = 1000
                     else:
                         if qAgent.lastAction == "jump": # Disincentivize jumping unnecessarily
-                            reward = -20
+                            reward = -60
                         else:
                             reward = 20
 

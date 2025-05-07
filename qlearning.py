@@ -267,14 +267,17 @@ class QLearningAgent():
         self.qvalues = Counter()
         self.actions = ("jump", "duck")
 
-        self.lastAction = None
-        self.lastState = None
+        # ensures the first iteration doesn't have NoneType issue
+        self.lastAction = "duck"
+        self.lastState = float("inf")
 
     def loadStates(self, filename):
         """" Sets Q-states to values from pickle file. """
         with open(filename, 'rb') as file:
             self.qvalues = pickle.load(file)
-        print(self.qvalues)
+
+        for key, value in sorted(self.qvalues.items(), key=lambda x: x[0]): 
+            print("{} : {}".format(key, value))
 
     def getQValue(self, state, action):
         """
@@ -361,11 +364,8 @@ class QLearningAgent():
 
         # Update qvalue with "weighted average" using alpha
         self.qvalues[(state, action)] = (1-self.alpha)*old_qvalue + self.alpha*utility
+        
         print("\n")
-
-        # print(self.qvalues.values())
-        # print(self.qvalues.keys())
-
         for key, value in sorted(self.qvalues.items(), key=lambda x: x[0]): 
             print("{} : {}".format(key, value))
 

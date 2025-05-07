@@ -39,7 +39,7 @@ CLOUD = pygame.image.load(os.path.join("Assets/Other", "Cloud.png"))
 
 BG = pygame.image.load(os.path.join("Assets/Other", "Track.png"))
 
-qAgent = QLearningAgent(.45, .95, .2)
+qAgent = QLearningAgent(.5, .8, .2)
 
 class Dinosaur:
     X_POS = 80
@@ -222,20 +222,6 @@ def main():
         points += 1
         if points % 100 == 0:
             game_speed += 1
-        
-        if MODE == Mode.COMPUTER_TRAIN:
-            time_to_obstacle = float("inf")
-            if len(obstacles) > 0:
-                time_to_obstacle = int((obstacles[0].rect.x-80) / game_speed)
-
-            if time_to_obstacle < 0 and player.dino_rect.y >= 310:
-                qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, 100)
-
-            # Punish airtime
-            if player.dino_rect.y < 310:
-                qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, -5)
-            else:
-                qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, 10)
 
         text = font.render("Points: " + str(points), True, (0, 0, 0))
 
@@ -275,20 +261,32 @@ def main():
             time_to_obstacle = float("inf")
             if len(obstacles) > 0:
                 time_to_obstacle = int((obstacles[0].rect.x-80) / game_speed)
-                #print("time to obstacle", time_to_obstacle)
-            # Only select an action if on the ground (y-axis is flipped)
-            # if time_to_obstacle == 15:
-            #     player.q_update("jump")
-            if player.dino_rect.y >= 310:
-                # if qAgent.lastState == "jump":
 
-                if MODE == Mode.COMPUTER_PLAY:
-                    player.q_update(qAgent.getPolicy(time_to_obstacle))
-                else:
+            # Only select an action and update qvalue if on the ground 
+            if not player.dino_jump:
+                if MODE == Mode.COMPUTER_TRAIN:
+                    reward = 0
+                    if time_to_obstacle < 0: # Incentivize clearing obstacle
+                        reward = 1000
+                    else:
+                        if qAgent.lastAction == "jump": # Disincentivize jumping unnecessarily
+                            reward = -20
+                        else:
+                            reward = 20
+
+                    # Update qvalue of previous state action pair with current state and calculated reward
+                    qAgent.update(qAgent.lastState, qAgent.lastAction, time_to_obstacle, reward)
+
+                    # Decide the agents next action
                     qAgent.lastAction = qAgent.getAction(time_to_obstacle)
                     qAgent.lastState = time_to_obstacle
                     player.q_update(qAgent.lastAction)
-            else:
+
+                else:
+                    qAgent.lastState = time_to_obstacle
+                    player.q_update(qAgent.getPolicy(time_to_obstacle))
+                    
+            else: # If in the air, agent cannot make a move
                 player.q_update(None)
 
 
@@ -309,10 +307,10 @@ def main():
                 else:
                     with open('states.pkl', 'wb') as file:
                         pickle.dump(qAgent.qvalues, file)
-                    qAgent.update(qAgent.lastState, qAgent.lastAction, None, -300)
+                    qAgent.update(qAgent.lastState, qAgent.lastAction, None, -1000)
                 death_count += 1
                 run = False
-                #menu(death_count)
+                #TODO: Fix death count? #menu(death_count)
 
         if run:
             background()
@@ -322,8 +320,9 @@ def main():
 
             score()
 
+            # Speed up the overall game to make training faster
             if MODE == Mode.COMPUTER_TRAIN:
-                clock.tick(30000)
+                clock.tick(10000)
             else:
                 clock.tick(30)
             
@@ -331,7 +330,6 @@ def main():
 
 
 def menu(death_count):
-
     global points
     global EPISODE
     run = True
@@ -359,7 +357,7 @@ def menu(death_count):
                     run = False
                 if event.type == pygame.KEYDOWN: # increase this later!!
                     main()
-        elif MODE == Mode.COMPUTER_TRAIN and EPISODE < 2000:
+        elif MODE == Mode.COMPUTER_TRAIN and EPISODE < 5000:
             EPISODE += 1
             main()
         else:

@@ -364,10 +364,6 @@ class QLearningAgent():
 
         # Update qvalue with "weighted average" using alpha
         self.qvalues[(state, action)] = (1-self.alpha)*old_qvalue + self.alpha*utility
-        
-        print("\n")
-        for key, value in sorted(self.qvalues.items(), key=lambda x: x[0]): 
-            print("{} : {}".format(key, value))
 
     def getPolicy(self, state):
         return self.computeActionFromQValues(state)

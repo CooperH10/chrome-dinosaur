@@ -276,9 +276,6 @@ class QLearningAgent():
         with open(filename, 'rb') as file:
             self.qvalues = pickle.load(file)
 
-        for key, value in sorted(self.qvalues.items(), key=lambda x: x[0]): 
-            print("{} : {}".format(key, value))
-
     def getQValue(self, state, action):
         """
           Returns Q(state,action)
